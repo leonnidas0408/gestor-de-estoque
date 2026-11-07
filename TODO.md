@@ -17,5 +17,5 @@
 - [x] Os fluxos críticos devem ter testes automatizados e verificação funcional concluída antes da publicação.
 
 ## Repositório e publicação
-- [ ] Criar um repositório na conta Git do usuário, versionar o código e publicar o projeto com instruções de execução.
-- [ ] Confirmar a publicação bem-sucedida antes de informar a URL do app.
+- [x] Criar um repositório na conta Git do usuário, versionar o código e publicar o projeto com instruções de execução.
+- [ ] Publicar a aplicação e confirmar a URL acessível antes de informar o resultado.
