@@ -416,6 +416,32 @@ test("categorias e despesas podem ser criadas e persistem com orçamento e obser
   dom.window.close();
 });
 
+test("salvar categoria valida nome, orçamento e equivalência de acentos", () => {
+  const dom = createApp(makeState());
+  click(dom, '[data-view="categories"]');
+  click(dom, '[data-action="new-category"]');
+  let form = dom.window.document.querySelector('#modal-form[data-type="category"]');
+  setField(dom, form, "name", "Café");
+  setField(dom, form, "budget", "125,50");
+  submit(dom, "category");
+  assert.equal(savedState(dom).categories.find((item) => item.name === "Café").budget, 125.5);
+
+  click(dom, '[data-action="new-category"]');
+  form = dom.window.document.querySelector('#modal-form[data-type="category"]');
+  setField(dom, form, "name", "Cafe");
+  setField(dom, form, "budget", "10");
+  submit(dom, "category");
+  assert.equal(savedState(dom).categories.filter((item) => /cafe/i.test(item.name)).length, 1);
+
+  click(dom, '[data-action="new-category"]');
+  form = dom.window.document.querySelector('#modal-form[data-type="category"]');
+  setField(dom, form, "name", "   ");
+  setField(dom, form, "budget", "10");
+  submit(dom, "category");
+  assert.equal(savedState(dom).categories.filter((item) => !item.name.trim()).length, 0);
+  dom.window.close();
+});
+
 test("movimentos rejeitam datas impossíveis sem alterar o saldo", () => {
   const dom = createApp(makeState([product("p1", "Arroz", 7, 2)]));
   click(dom, '[data-view="products"]');

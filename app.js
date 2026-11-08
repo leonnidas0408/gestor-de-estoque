@@ -1004,11 +1004,26 @@
     showToast(old ? "Despesa atualizada." : "Despesa registrada.");
   }
   function commitCategory(d) {
-    const name = d.name.trim();
+    const name = String(d.name || "").trim();
+    const budget = parseCSVNumber(d.budget);
+    const categoryKey = (value) =>
+      String(value || "")
+        .trim()
+        .toLocaleLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
+    if (!name) {
+      showToast("Informe o nome da categoria.");
+      return;
+    }
+    if (!Number.isFinite(budget) || budget < 0) {
+      showToast("Informe um orçamento válido, usando vírgula ou ponto nos centavos.");
+      return;
+    }
     if (
       state.categories.some(
         (c) =>
-          c.name.toLocaleLowerCase() === name.toLocaleLowerCase() &&
+          categoryKey(c.name) === categoryKey(name) &&
           c.id !== d.id,
       )
     ) {
@@ -1020,8 +1035,8 @@
       const previous = old.name;
       Object.assign(old, {
         name,
-        budget: Number(d.budget) || 0,
-        color: safeColor(d.color),
+        budget,
+        color: safeColor(d.color || COLORS[state.categories.indexOf(old) % COLORS.length]),
       });
       if (previous !== name) {
         state.products.forEach((p) => {
@@ -1035,7 +1050,7 @@
       state.categories.push({
         id: uid(),
         name,
-        budget: Number(d.budget) || 0,
+        budget,
         color: safeColor(
           d.color || COLORS[state.categories.length % COLORS.length],
         ),
