@@ -13,6 +13,11 @@
 - [x] O painel deve exibir indicadores da quantidade de itens, valor estimado do estoque e produtos com saldo baixo ou zerado.
 - [x] Produtos no nível mínimo e esgotados devem gerar alertas visuais.
 
+## Personalização para qualquer empresa
+- [x] Permitir configurar nome da empresa, responsável, frase do painel e moeda.
+- [x] Permitir personalizar cores principais, destaque e fundo com presets de tema.
+- [x] Permitir exportar um backup JSON completo dos dados e restaurar os dados demonstrativos.
+
 ## Verificação antes da publicação
 - [x] Os fluxos críticos devem ter testes automatizados e verificação funcional concluída antes da publicação.
 

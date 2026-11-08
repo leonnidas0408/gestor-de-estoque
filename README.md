@@ -1,6 +1,6 @@
 # Gestor de Estoque
 
-Aplicação web responsiva para acompanhar produtos, saldo, movimentações, despesas, categorias e relatórios. Interface em português, baseada nos arquivos HTML/CSS/JavaScript entregues e nos dados armazenados no próprio navegador.
+Aplicação web responsiva e local-first para qualquer empresa acompanhar produtos, saldo, movimentações, despesas, categorias e relatórios. O nome da empresa, responsável, frase do painel, moeda e cores do tema são configuráveis em **Configurações**.
 
 ## Executar localmente
 
@@ -23,6 +23,6 @@ npm run build
 
 O build estático é gerado em `dist/` e não exige backend nem serviço de banco de dados.
 
-## Dados e privacidade
+## Personalização e dados
 
-Os dados são salvos no `localStorage` do navegador utilizado e não são enviados a um servidor. Eles não são sincronizados entre navegadores, perfis ou dispositivos. Para cópia e transporte, use as opções CSV da tela Relatórios; exportações disponíveis abrangem produtos, despesas e categorias. O conjunto inicial contém exemplos demonstrativos.
+Os dados são salvos no `localStorage` do navegador utilizado e não são enviados a um servidor. Eles não são sincronizados entre navegadores, perfis ou dispositivos. Use **Configurações** para personalizar a identidade visual e baixar um backup JSON completo. A tela Relatórios também oferece CSVs de produtos, despesas e categorias. O conjunto inicial contém exemplos demonstrativos, que podem ser substituídos pelos dados reais.

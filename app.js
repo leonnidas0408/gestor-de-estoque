@@ -21,9 +21,9 @@
     month: "short",
   });
   const money = (value) =>
-    new Intl.NumberFormat("pt-BR", {
+    new Intl.NumberFormat(state?.settings?.locale || "pt-BR", {
       style: "currency",
-      currency: "BRL",
+      currency: state?.settings?.currency || "BRL",
     }).format(Number(value) || 0);
   const number = (value) =>
     new Intl.NumberFormat("pt-BR").format(Number(value) || 0);
@@ -264,9 +264,28 @@
       categories,
       sales,
       movements: [],
-      settings: { currency: "BRL" },
+      settings: {
+        companyName: "Estoque",
+        ownerName: "Ana",
+        tagline: "Seu estoque, sob controle.",
+        currency: "BRL",
+        locale: "pt-BR",
+        primaryColor: "#176b38",
+        accentColor: "#e68819",
+        surfaceColor: "#f4f7f3",
+      },
     };
   }
+  const defaultSettings = {
+    companyName: "Estoque",
+    ownerName: "Ana",
+    tagline: "Seu estoque, sob controle.",
+    currency: "BRL",
+    locale: "pt-BR",
+    primaryColor: "#176b38",
+    accentColor: "#e68819",
+    surfaceColor: "#f4f7f3",
+  };
   function loadState() {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
@@ -279,8 +298,9 @@
           categories: [],
           sales: [],
           movements: [],
-          settings: {},
+          settings: { ...defaultSettings, ...(data.settings || {}) },
           ...data,
+          settings: { ...defaultSettings, ...(data.settings || {}) },
         };
       }
     } catch (error) {
@@ -289,6 +309,19 @@
     return makeSeed();
   }
   let state = loadState();
+  function applyTheme() {
+    const settings = { ...defaultSettings, ...(state.settings || {}) };
+    const color = (value, fallback) => /^#[0-9a-f]{6}$/i.test(value || "") ? value : fallback;
+    const primary = color(settings.primaryColor, defaultSettings.primaryColor);
+    const accent = color(settings.accentColor, defaultSettings.accentColor);
+    const surface = color(settings.surfaceColor, defaultSettings.surfaceColor);
+    document.documentElement.style.setProperty("--green", primary);
+    document.documentElement.style.setProperty("--green-dark", primary);
+    document.documentElement.style.setProperty("--orange", accent);
+    document.documentElement.style.setProperty("--surface", surface);
+    document.documentElement.style.setProperty("--focus", `${primary}38`);
+    document.documentElement.dataset.theme = settings.surfaceColor === "#17231c" ? "dark" : "light";
+  }
   let activeView = "home";
   let query = "";
   let categoryFilter = "Todas";
@@ -300,6 +333,7 @@
   function save() {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      applyTheme();
     } catch (error) {
       showToast("Não foi possível salvar. Verifique o espaço do navegador.");
       console.error(error);
@@ -403,7 +437,8 @@
     return `<button class="nav-item ${activeView === view ? "active" : ""}" data-view="${view}" aria-label="${label}">${icon(iconName, 21)}<span>${label}</span></button>`;
   }
   function shell(content) {
-    return `<div class="app-shell"><header class="topbar"><div class="brand"><span class="brand-mark">${icon("box", 22)}</span><span>Estoque</span></div><button class="icon-button" data-view="reports" aria-label="Ver alertas e análises">${icon("bell")}<i class="notify-dot"></i></button></header><main class="content">${content}</main><nav class="bottom-nav" aria-label="Navegação principal">${navButton("home", "Início", "home")}${navButton("products", "Produtos", "products")}${navButton("activity", "Atividade", "activity")}${navButton("reports", "Relatórios", "report")}${navButton("categories", "Categorias", "settings")}</nav>${modal ? renderModal() : ""}<div id="toast" class="toast" role="status" aria-live="polite"></div></div>`;
+    const settings = state.settings || defaultSettings;
+    return `<div class="app-shell"><header class="topbar"><button class="brand brand-button" data-view="home" aria-label="Ir para o início"><span class="brand-mark">${icon("box", 22)}</span><span>${escapeHtml(settings.companyName || "Estoque")}</span></button><div class="topbar-actions"><button class="icon-button" data-view="reports" aria-label="Ver alertas e análises">${icon("bell")}<i class="notify-dot"></i></button><button class="icon-button" data-view="settings" aria-label="Abrir configurações">${icon("settings")}</button></div></header><main class="content">${content}</main><nav class="bottom-nav" aria-label="Navegação principal">${navButton("home", "Início", "home")}${navButton("products", "Produtos", "products")}${navButton("activity", "Atividade", "activity")}${navButton("reports", "Relatórios", "report")}${navButton("categories", "Categorias", "settings")}</nav>${modal ? renderModal() : ""}<div id="toast" class="toast" role="status" aria-live="polite"></div></div>`;
   }
   const sectionTitle = (title, actionLabel, action) => {
     const target = [
@@ -465,7 +500,8 @@
       series.length > 1 && series.at(-2).total
         ? Math.round((last.total / series.at(-2).total - 1) * 100)
         : 0;
-    return `<div class="welcome"><div class="eyebrow">${new Intl.DateTimeFormat("pt-BR", { weekday: "long", day: "numeric", month: "long" }).format(new Date())}</div><h1>Bom dia, Ana <span aria-hidden="true">👋</span></h1><p>Seu estoque, sob controle.</p></div>${state.demo ? `<div class="insight" style="margin-bottom:12px"><span class="insight-icon">${icon("spark", 16)}</span><span>Produtos, despesas e vendas iniciais são exemplos. Edite ou exclua esses registros para refletir sua operação.</span></div>` : ""}
+    const settings = { ...defaultSettings, ...(state.settings || {}) };
+    return `<div class="welcome"><div class="eyebrow">${new Intl.DateTimeFormat(settings.locale || "pt-BR", { weekday: "long", day: "numeric", month: "long" }).format(new Date())}</div><h1>Bom dia, ${escapeHtml(settings.ownerName || "gestor")} <span aria-hidden="true">👋</span></h1><p>${escapeHtml(settings.tagline || "Seu estoque, sob controle.")}</p></div>${state.demo ? `<div class="insight" style="margin-bottom:12px"><span class="insight-icon">${icon("spark", 16)}</span><span>Produtos, despesas e vendas iniciais são exemplos. Edite ou exclua esses registros para refletir sua operação.</span></div>` : ""}
       <div class="summary-card"><div class="metric"><span class="metric-icon primary">${icon("box")}</span><div><div class="metric-label">Valor em estoque</div><div class="metric-value">${money(totalStock())}</div></div></div><div class="metric"><span class="metric-icon">${icon("tag")}</span><div><div class="metric-label">Produtos ativos</div><div class="metric-value">${number(activeProducts())}</div>        <div class="metric-sub">${number(state.products.length)} cadastrados</div></div></div></div><p class="footnote local-storage-note">Os dados ficam salvos somente neste navegador e não sincronizam entre dispositivos. Exporte CSVs em Relatórios para manter uma cópia.</p>
       ${low.length ? `<div class="stock-alert"><span class="alert-icon">${icon("alert")}</span><span class="alert-text"><strong>${low.length} ${low.length === 1 ? "item precisa" : "itens precisam"} de reposição</strong><br>${state.products.filter((p) => Number(p.quantity) <= 0).length ? `${state.products.filter((p) => Number(p.quantity) <= 0).length} zerados · ` : ""}Confira os produtos abaixo do mínimo.</span><button class="button button-small" style="background:#e98515;color:#fff" data-view="products">Ver itens</button></div>` : ""}
       <section class="section">${sectionTitle("Acesso rápido")}<div class="quick-grid"><button class="quick-action" data-modal="entry">${icon("down")}<span>Entrada</span></button><button class="quick-action" data-modal="expense">${icon("wallet")}<span>Despesa</span></button><button class="quick-action" data-modal="sale">${icon("up")}<span>Registrar venda</span></button><button class="quick-action" data-view="categories">${icon("tag")}<span>Categorias</span></button></div></section>
@@ -651,6 +687,10 @@
         : `<div class="empty-state"><strong>Nenhuma categoria cadastrada</strong>Adicione categorias para organizar produtos e despesas.</div>`
     }</div><div class="section"><div class="insight"><span class="insight-icon">${icon("spark", 16)}</span><span>As categorias mantêm despesas e orçamento mensal organizados. Alterar o nome também atualiza os itens vinculados.</span></div></div>`;
   }
+  function renderSettings() {
+    const s = { ...defaultSettings, ...(state.settings || {}) };
+    return `${pageHeading("PERSONALIZAÇÃO", "Configurações", "Adapte o sistema à identidade e à operação da sua empresa.")}<form class="settings-form" id="settings-form"><section class="card settings-card"><div class="settings-section-title"><span class="metric-icon">${icon("spark", 18)}</span><div><h2>Identidade da empresa</h2><p>Esses dados aparecem no cabeçalho e no painel inicial.</p></div></div><div class="form-grid"><div class="field full"><label for="settings-company">Nome da empresa</label><input id="settings-company" name="companyName" required maxlength="60" value="${escapeHtml(s.companyName)}" placeholder="Ex.: Mercado Central"></div><div class="field"><label for="settings-owner">Nome do responsável</label><input id="settings-owner" name="ownerName" maxlength="50" value="${escapeHtml(s.ownerName)}" placeholder="Ex.: Mariana"></div><div class="field"><label for="settings-currency">Moeda</label><select id="settings-currency" name="currency"><option value="BRL" ${s.currency === "BRL" ? "selected" : ""}>Real brasileiro (R$)</option><option value="USD" ${s.currency === "USD" ? "selected" : ""}>Dólar americano (US$)</option><option value="EUR" ${s.currency === "EUR" ? "selected" : ""}>Euro (€)</option></select></div><div class="field full"><label for="settings-tagline">Frase do painel</label><input id="settings-tagline" name="tagline" maxlength="100" value="${escapeHtml(s.tagline)}" placeholder="Ex.: Operação leve, estoque no controle."></div></div></section><section class="card settings-card"><div class="settings-section-title"><span class="metric-icon">${icon("tag", 18)}</span><div><h2>Tema visual</h2><p>Escolha as cores que combinam com a sua marca.</p></div></div><div class="theme-swatches"><label class="color-field"><span>Cor principal</span><input type="color" name="primaryColor" value="${safeColor(s.primaryColor)}"></label><label class="color-field"><span>Cor de destaque</span><input type="color" name="accentColor" value="${safeColor(s.accentColor)}"></label><label class="color-field"><span>Fundo</span><input type="color" name="surfaceColor" value="${safeColor(s.surfaceColor)}"></label></div><div class="theme-presets"><button type="button" class="theme-preset" data-theme-preset="forest"><i style="background:#176b38"></i>Floresta</button><button type="button" class="theme-preset" data-theme-preset="ocean"><i style="background:#176b8a"></i>Oceano</button><button type="button" class="theme-preset" data-theme-preset="plum"><i style="background:#70458f"></i>Ameixa</button></div><div class="form-actions"><button class="button button-primary" type="submit">${icon("check", 16)} Salvar personalização</button></div></section></form><section class="card settings-card"><div class="settings-section-title"><span class="metric-icon">${icon("download", 18)}</span><div><h2>Dados da empresa</h2><p>Faça uma cópia completa para migrar ou recuperar sua operação.</p></div></div><div class="settings-actions"><button class="button button-soft button-small" data-action="export-backup">${icon("download", 14)} Baixar backup completo</button><button class="button button-plain button-small" data-action="reset-demo">${icon("spark", 14)} Recomeçar com dados de exemplo</button></div><p class="footnote">Os dados continuam armazenados somente neste navegador. O backup JSON inclui configurações, produtos, categorias, vendas, despesas e histórico.</p></section>`;
+  }
   function getView() {
     return (
       {
@@ -659,6 +699,7 @@
         activity: renderActivityPage,
         reports: renderReports,
         categories: renderCategories,
+        settings: renderSettings,
       }[activeView] || renderHome
     )();
   }
@@ -1522,6 +1563,23 @@
       render();
     }
     if (action === "export") exportCSV(button.dataset.kind);
+    if (action === "export-backup") {
+      const url = URL.createObjectURL(new Blob([JSON.stringify(state, null, 2)], { type: "application/json" }));
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${String(state.settings?.companyName || "empresa").toLocaleLowerCase().replace(/[^a-z0-9]+/gi, "-") || "empresa"}-backup.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast("Backup completo exportado.");
+    }
+    if (action === "reset-demo") {
+      if (window.confirm("Isso substituirá os dados atuais por exemplos demonstrativos. Continuar?")) {
+        state = makeSeed();
+        save();
+        render();
+        showToast("Dados de exemplo restaurados.");
+      }
+    }
     if (action === "import") {
       importKind = button.dataset.kind;
       const input = $("#csv-file-input");
@@ -1581,6 +1639,29 @@
     return data;
   }
   app.addEventListener("submit", (event) => {
+    if (event.target.id === "settings-form") {
+      event.preventDefault();
+      const data = Object.fromEntries(new FormData(event.target).entries());
+      if (!String(data.companyName || "").trim()) {
+        showToast("Informe o nome da empresa.");
+        return;
+      }
+      state.settings = {
+        ...defaultSettings,
+        ...state.settings,
+        companyName: String(data.companyName).trim(),
+        ownerName: String(data.ownerName || "").trim() || "gestor",
+        tagline: String(data.tagline || "").trim() || defaultSettings.tagline,
+        currency: ["BRL", "USD", "EUR"].includes(data.currency) ? data.currency : "BRL",
+        primaryColor: safeColor(data.primaryColor),
+        accentColor: safeColor(data.accentColor),
+        surfaceColor: safeColor(data.surfaceColor),
+      };
+      save();
+      render();
+      showToast("Personalização salva.");
+      return;
+    }
     if (event.target.id !== "modal-form") return;
     event.preventDefault();
     const form = event.target,
@@ -1593,6 +1674,27 @@
     if (form.dataset.type === "entry") commitEntry(d);
     if (form.dataset.type === "exit") commitExit(d);
     if (form.dataset.type === "adjustment") commitAdjustment(d);
+  });
+  app.addEventListener("click", (event) => {
+    const preset = event.target.closest("[data-theme-preset]");
+    if (!preset) return;
+    const themes = {
+      forest: ["#176b38", "#e68819", "#f4f7f3"],
+      ocean: ["#176b8a", "#e58f32", "#f2f7f8"],
+      plum: ["#70458f", "#d87955", "#f7f3f8"],
+    };
+    const values = themes[preset.dataset.themePreset];
+    if (!values) return;
+    const form = document.querySelector("#settings-form");
+    if (form) {
+      form.elements.primaryColor.value = values[0];
+      form.elements.accentColor.value = values[1];
+      form.elements.surfaceColor.value = values[2];
+      document.documentElement.style.setProperty("--green", values[0]);
+      document.documentElement.style.setProperty("--green-dark", values[0]);
+      document.documentElement.style.setProperty("--orange", values[1]);
+      document.documentElement.style.setProperty("--surface", values[2]);
+    }
   });
   app.addEventListener("change", (event) => {
     if (event.target.id === "s-product") {
@@ -1628,5 +1730,6 @@
       render();
     }
   });
+  applyTheme();
   render();
 })();
