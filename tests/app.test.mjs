@@ -7,6 +7,16 @@ const html = readFileSync(new URL("../index.html", import.meta.url), "utf8");
 const appJs = readFileSync(new URL("../app.js", import.meta.url), "utf8");
 const STORAGE_KEY = "estoque-local-v1";
 
+test("HTML usa caminhos relativos para funcionar no subdiretório do GitHub Pages", () => {
+  const assetPaths = [...html.matchAll(/(?:src|href)="([^"]+)"/g)].map(
+    (match) => match[1],
+  );
+  assert.ok(assetPaths.includes("./brand-mark.svg"));
+  assert.ok(assetPaths.includes("./styles.css"));
+  assert.ok(assetPaths.includes("./app.js"));
+  assert.ok(assetPaths.every((path) => !path.startsWith("/")));
+});
+
 function makeState(products = []) {
   return {
     version: 1,
