@@ -861,7 +861,7 @@
     } else if (modal.type === "category") {
       title = record.id ? "Editar categoria" : "Nova categoria";
       subtitle = "Crie uma categoria e defina o limite mensal.";
-      form = `<form id="modal-form" data-type="category"><input type="hidden" name="id" value="${escapeHtml(record.id || "")}"><div class="form-grid"><div class="field full"><label for="c-name">Nome</label><input id="c-name" name="name" required maxlength="50" value="${escapeHtml(record.name || "")}" placeholder="Ex.: Manutenção"></div><div class="field"><label for="c-budget">Orçamento mensal (R$)</label><input id="c-budget" name="budget" type="text" inputmode="decimal" autocomplete="off" value="${record.budget ?? 0}"></div><div class="field"><label for="c-color">Cor nos relatórios</label><input id="c-color" name="color" type="color" value="${safeColor(record.color || COLORS[state.categories.length % COLORS.length])}"></div></div><div class="form-actions"><button class="button button-plain" type="button" data-action="close-modal">Cancelar</button><button class="button button-primary" type="submit">${icon("check", 16)} Salvar categoria</button></div></form>`;
+      form = `<form id="modal-form" data-type="category"><input type="hidden" name="id" value="${escapeHtml(record.id || "")}"><div class="form-grid"><div class="field full"><label for="c-name">Nome</label><input id="c-name" name="name" required maxlength="50" value="${escapeHtml(record.name || "")}" placeholder="Ex.: Manutenção"></div><div class="field"><label for="c-budget">Orçamento mensal (R$)</label><input id="c-budget" name="budget" type="text" inputmode="decimal" autocomplete="off" value="${record.budget ?? 0}"></div><div class="field"><label for="c-color">Cor nos relatórios</label><input id="c-color" name="color" type="color" value="${safeColor(record.color || COLORS[state.categories.length % COLORS.length])}"></div></div><div class="form-actions"><button class="button button-plain" type="button" data-action="close-modal">Cancelar</button><button class="button button-primary" type="button" data-action="save-category">${icon("check", 16)} Salvar categoria</button></div></form>`;
     }
     if (modal.type === "history") {
       const product = record;
@@ -1561,6 +1561,13 @@
     const action = button.dataset.action;
     if (action === "close-modal") {
       closeModal();
+      return;
+    }
+    if (action === "save-category") {
+      const form = button.closest("form[data-type=category]");
+      if (!form) return;
+      const data = normalizeModalDecimals("category", formData(form));
+      if (data) commitCategory(data);
       return;
     }
     if (action === "backdrop" && event.target === button) {
