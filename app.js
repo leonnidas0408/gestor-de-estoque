@@ -3,6 +3,8 @@
   "use strict";
 
   const STORAGE_KEY = "estoque-local-v1";
+  const COMPANY_COOKIE = "estoque_active_company";
+  const COMPANY_INDEX_COOKIE = "estoque_companies";
   const COLORS = [
     "#286b3d",
     "#e59a42",
@@ -104,6 +106,44 @@
   const icon = (name, size = 20) =>
     `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${iconPaths[name] || iconPaths.spark}</svg>`;
 
+  const cookieGet = (name) => {
+    const found = document.cookie.split("; ").find((item) => item.startsWith(`${name}=`));
+    return found ? decodeURIComponent(found.slice(name.length + 1)) : "";
+  };
+  const cookieSet = (name, value) => {
+    document.cookie = `${name}=${encodeURIComponent(value)}; max-age=31536000; path=/; SameSite=Lax`;
+  };
+  const companyKey = (name) => `estoque-company-${String(name || "").trim().toLocaleLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "empresa"}`;
+  const companyNames = () => {
+    try { return JSON.parse(cookieGet(COMPANY_INDEX_COOKIE) || "[]"); } catch { return []; }
+  };
+  const rememberCompany = (name) => {
+    const names = [...new Set([...companyNames(), String(name).trim()])].filter(Boolean).slice(-20);
+    cookieSet(COMPANY_INDEX_COOKIE, JSON.stringify(names));
+    cookieSet(COMPANY_COOKIE, String(name).trim());
+  };
+  function makeEmptyState(companyName = "", ownerName = "") {
+    return {
+      version: 2,
+      demo: false,
+      products: [],
+      expenses: [],
+      categories: [],
+      sales: [],
+      movements: [],
+      settings: {
+        companyName,
+        ownerName,
+        tagline: "Seu estoque, sob controle.",
+        currency: "BRL",
+        locale: "pt-BR",
+        primaryColor: "#176b38",
+        accentColor: "#e68819",
+        surfaceColor: "#f4f7f3",
+        setupComplete: Boolean(companyName),
+      },
+    };
+  }
   function makeSeed() {
     const now = new Date();
     const categories = [
@@ -273,6 +313,7 @@
         primaryColor: "#176b38",
         accentColor: "#e68819",
         surfaceColor: "#f4f7f3",
+        setupComplete: true,
       },
     };
   }
@@ -285,14 +326,18 @@
     primaryColor: "#176b38",
     accentColor: "#e68819",
     surfaceColor: "#f4f7f3",
+    setupComplete: false,
   };
   function loadState() {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY);
+      const activeName = cookieGet(COMPANY_COOKIE);
+      const saved = activeName
+        ? localStorage.getItem(companyKey(activeName))
+        : localStorage.getItem(STORAGE_KEY);
       if (saved) {
         const data = JSON.parse(saved);
         return {
-          version: 1,
+          version: 2,
           products: [],
           expenses: [],
           categories: [],
@@ -303,10 +348,11 @@
           settings: { ...defaultSettings, ...(data.settings || {}) },
         };
       }
+      return makeEmptyState();
     } catch (error) {
       console.warn("Não foi possível ler o estoque salvo.", error);
     }
-    return makeSeed();
+    return makeEmptyState();
   }
   let state = loadState();
   function applyTheme() {
@@ -332,7 +378,13 @@
   let toastTimer;
   function save() {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      const companyName = String(state.settings?.companyName || "").trim();
+      const serialized = JSON.stringify(state);
+      localStorage.setItem(STORAGE_KEY, serialized);
+      if (companyName) {
+        localStorage.setItem(companyKey(companyName), serialized);
+        rememberCompany(companyName);
+      }
       applyTheme();
     } catch (error) {
       showToast("Não foi possível salvar. Verifique o espaço do navegador.");
@@ -435,6 +487,10 @@
   }
   function navButton(view, label, iconName) {
     return `<button class="nav-item ${activeView === view ? "active" : ""}" data-view="${view}" aria-label="${label}">${icon(iconName, 21)}<span>${label}</span></button>`;
+  }
+  function renderOnboarding() {
+    const companies = companyNames();
+    return `<div class="onboarding-shell"><div class="onboarding-card"><div class="onboarding-brand"><span class="brand-mark">${icon("box", 25)}</span><span>Gestão de estoque</span></div><div class="eyebrow">PRIMEIRO ACESSO</div><h1>Comece pela sua empresa</h1><p class="onboarding-lead">Crie um espaço limpo para sua operação ou entre em uma empresa já salva neste computador.</p><div class="onboarding-sections"><form id="setup-form" class="setup-panel" data-mode="create"><div class="setup-panel-heading"><span class="metric-icon primary">${icon("plus", 18)}</span><div><h2>Criar nova empresa</h2><p>Você começará sem dados de exemplo.</p></div></div><label class="setup-field"><span>Nome da empresa</span><input name="companyName" required maxlength="60" placeholder="Ex.: Mercado Central"></label><label class="setup-field"><span>Seu nome</span><input name="ownerName" maxlength="50" placeholder="Ex.: Mariana"></label><button class="button button-primary" type="submit">Criar espaço da empresa ${icon("arrowRight", 16)}</button></form><div class="setup-panel existing-company-panel"><div class="setup-panel-heading"><span class="metric-icon">${icon("chevron", 18)}</span><div><h2>Entrar em empresa existente</h2><p>Disponível quando já foi salva neste computador.</p></div></div><label class="setup-field"><span>Nome da empresa</span><input id="existing-company-name" list="known-companies" placeholder="Digite o nome exato"></label><datalist id="known-companies">${companies.map((name) => `<option value="${escapeHtml(name)}"></option>`).join("")}</datalist><button class="button button-soft" type="button" data-action="enter-company">Entrar na empresa</button>${companies.length ? `<div class="known-companies"><span>Empresas salvas aqui</span>${companies.map((name) => `<button type="button" class="known-company" data-company-name="${escapeHtml(name)}">${escapeHtml(name)} ${icon("chevron", 14)}</button>`).join("")}</div>` : `<p class="setup-empty">Nenhuma empresa salva neste computador ainda.</p>`}</div></div><p class="onboarding-footnote">Os dados ficam salvos neste computador e neste navegador. Para levar a operação para outro dispositivo, use o backup completo em Configurações.</p></div></div>`;
   }
   function shell(content) {
     const settings = state.settings || defaultSettings;
@@ -689,7 +745,7 @@
   }
   function renderSettings() {
     const s = { ...defaultSettings, ...(state.settings || {}) };
-    return `${pageHeading("PERSONALIZAÇÃO", "Configurações", "Adapte o sistema à identidade e à operação da sua empresa.")}<form class="settings-form" id="settings-form"><section class="card settings-card"><div class="settings-section-title"><span class="metric-icon">${icon("spark", 18)}</span><div><h2>Identidade da empresa</h2><p>Esses dados aparecem no cabeçalho e no painel inicial.</p></div></div><div class="form-grid"><div class="field full"><label for="settings-company">Nome da empresa</label><input id="settings-company" name="companyName" required maxlength="60" value="${escapeHtml(s.companyName)}" placeholder="Ex.: Mercado Central"></div><div class="field"><label for="settings-owner">Nome do responsável</label><input id="settings-owner" name="ownerName" maxlength="50" value="${escapeHtml(s.ownerName)}" placeholder="Ex.: Mariana"></div><div class="field"><label for="settings-currency">Moeda</label><select id="settings-currency" name="currency"><option value="BRL" ${s.currency === "BRL" ? "selected" : ""}>Real brasileiro (R$)</option><option value="USD" ${s.currency === "USD" ? "selected" : ""}>Dólar americano (US$)</option><option value="EUR" ${s.currency === "EUR" ? "selected" : ""}>Euro (€)</option></select></div><div class="field full"><label for="settings-tagline">Frase do painel</label><input id="settings-tagline" name="tagline" maxlength="100" value="${escapeHtml(s.tagline)}" placeholder="Ex.: Operação leve, estoque no controle."></div></div></section><section class="card settings-card"><div class="settings-section-title"><span class="metric-icon">${icon("tag", 18)}</span><div><h2>Tema visual</h2><p>Escolha as cores que combinam com a sua marca.</p></div></div><div class="theme-swatches"><label class="color-field"><span>Cor principal</span><input type="color" name="primaryColor" value="${safeColor(s.primaryColor)}"></label><label class="color-field"><span>Cor de destaque</span><input type="color" name="accentColor" value="${safeColor(s.accentColor)}"></label><label class="color-field"><span>Fundo</span><input type="color" name="surfaceColor" value="${safeColor(s.surfaceColor)}"></label></div><div class="theme-presets"><button type="button" class="theme-preset" data-theme-preset="forest"><i style="background:#176b38"></i>Floresta</button><button type="button" class="theme-preset" data-theme-preset="ocean"><i style="background:#176b8a"></i>Oceano</button><button type="button" class="theme-preset" data-theme-preset="plum"><i style="background:#70458f"></i>Ameixa</button></div><div class="form-actions"><button class="button button-primary" type="submit">${icon("check", 16)} Salvar personalização</button></div></section></form><section class="card settings-card"><div class="settings-section-title"><span class="metric-icon">${icon("download", 18)}</span><div><h2>Dados da empresa</h2><p>Faça uma cópia completa para migrar ou recuperar sua operação.</p></div></div><div class="settings-actions"><button class="button button-soft button-small" data-action="export-backup">${icon("download", 14)} Baixar backup completo</button><button class="button button-plain button-small" data-action="reset-demo">${icon("spark", 14)} Recomeçar com dados de exemplo</button></div><p class="footnote">Os dados continuam armazenados somente neste navegador. O backup JSON inclui configurações, produtos, categorias, vendas, despesas e histórico.</p></section>`;
+    return `${pageHeading("PERSONALIZAÇÃO", "Configurações", "Adapte o sistema à identidade e à operação da sua empresa.")}<form class="settings-form" id="settings-form"><section class="card settings-card"><div class="settings-section-title"><span class="metric-icon">${icon("spark", 18)}</span><div><h2>Identidade da empresa</h2><p>Esses dados aparecem no cabeçalho e no painel inicial.</p></div></div><div class="form-grid"><div class="field full"><label for="settings-company">Nome da empresa</label><input id="settings-company" name="companyName" required maxlength="60" value="${escapeHtml(s.companyName)}" placeholder="Ex.: Mercado Central"></div><div class="field"><label for="settings-owner">Nome do responsável</label><input id="settings-owner" name="ownerName" maxlength="50" value="${escapeHtml(s.ownerName)}" placeholder="Ex.: Mariana"></div><div class="field"><label for="settings-currency">Moeda</label><select id="settings-currency" name="currency"><option value="BRL" ${s.currency === "BRL" ? "selected" : ""}>Real brasileiro (R$)</option><option value="USD" ${s.currency === "USD" ? "selected" : ""}>Dólar americano (US$)</option><option value="EUR" ${s.currency === "EUR" ? "selected" : ""}>Euro (€)</option></select></div><div class="field full"><label for="settings-tagline">Frase do painel</label><input id="settings-tagline" name="tagline" maxlength="100" value="${escapeHtml(s.tagline)}" placeholder="Ex.: Operação leve, estoque no controle."></div></div></section><section class="card settings-card"><div class="settings-section-title"><span class="metric-icon">${icon("tag", 18)}</span><div><h2>Tema visual</h2><p>Escolha as cores que combinam com a sua marca.</p></div></div><div class="theme-swatches"><label class="color-field"><span>Cor principal</span><input type="color" name="primaryColor" value="${safeColor(s.primaryColor)}"></label><label class="color-field"><span>Cor de destaque</span><input type="color" name="accentColor" value="${safeColor(s.accentColor)}"></label><label class="color-field"><span>Fundo</span><input type="color" name="surfaceColor" value="${safeColor(s.surfaceColor)}"></label></div><div class="theme-presets"><button type="button" class="theme-preset" data-theme-preset="forest"><i style="background:#176b38"></i>Floresta</button><button type="button" class="theme-preset" data-theme-preset="ocean"><i style="background:#176b8a"></i>Oceano</button><button type="button" class="theme-preset" data-theme-preset="plum"><i style="background:#70458f"></i>Ameixa</button></div><div class="form-actions"><button class="button button-primary" type="submit">${icon("check", 16)} Salvar personalização</button></div></section></form><section class="card settings-card"><div class="settings-section-title"><span class="metric-icon">${icon("download", 18)}</span><div><h2>Dados da empresa</h2><p>Faça uma cópia completa para migrar ou recuperar sua operação.</p></div></div><div class="settings-actions"><button class="button button-soft button-small" data-action="export-backup">${icon("download", 14)} Baixar backup completo</button><button class="button button-plain button-small" data-action="reset-demo">${icon("spark", 14)} Limpar dados da empresa</button><button class="button button-plain button-small" data-action="switch-company">${icon("chevron", 14)} Trocar de empresa</button></div><p class="footnote">Os dados continuam armazenados somente neste navegador. O backup JSON inclui configurações, produtos, categorias, vendas, despesas e histórico.</p></section>`;
   }
   function getView() {
     return (
@@ -705,6 +761,11 @@
   }
   function render() {
     const scroll = window.scrollY;
+    if (!state?.settings?.setupComplete) {
+      document.documentElement.dataset.theme = "light";
+      app.innerHTML = renderOnboarding();
+      return;
+    }
     app.innerHTML = shell(getView());
     if (activeView === "products") {
       const input = $("#product-search");
@@ -811,6 +872,20 @@
       form = `<div class="history-list">${history.length ? history.map((item) => renderActivity(item)).join("") : `<div class="empty-state"><strong>Nenhuma movimentação registrada</strong>Entradas, saídas, vendas e ajustes deste produto aparecerão aqui.</div>`}</div><div class="form-actions"><button class="button button-plain" type="button" data-action="close-modal">Fechar</button></div>`;
     }
     return `<div class="modal-backdrop" data-action="backdrop"><section class="modal" role="dialog" aria-modal="true" aria-label="${escapeHtml(title)}"><div class="modal-grab"></div><div class="modal-heading"><div><h2>${escapeHtml(title)}</h2><p>${escapeHtml(subtitle)}</p></div><button class="close-button" data-action="close-modal" aria-label="Fechar">${icon("close")}</button></div>${form}</section></div>`;
+  }
+  function enterCompany(name) {
+    const cleanName = String(name || "").trim();
+    if (!cleanName) { showToast("Digite o nome da empresa."); return; }
+    const saved = localStorage.getItem(companyKey(cleanName));
+    if (!saved) { showToast("Não encontrei essa empresa neste computador."); return; }
+    try {
+      state = JSON.parse(saved);
+      state.settings = { ...defaultSettings, ...(state.settings || {}), companyName: state.settings?.companyName || cleanName, setupComplete: true };
+      rememberCompany(state.settings.companyName);
+      applyTheme();
+      render();
+      showToast(`Empresa ${state.settings.companyName} aberta.`);
+    } catch { showToast("Não foi possível abrir os dados desta empresa."); }
   }
   function openModal(type, record = null) {
     modal = { type, record };
@@ -1562,6 +1637,12 @@
       activityFilter = button.dataset.filter;
       render();
     }
+    if (action === "enter-company") enterCompany($("#existing-company-name")?.value);
+    if (button.dataset.companyName) enterCompany(button.dataset.companyName);
+    if (action === "switch-company") {
+      state.settings = { ...state.settings, setupComplete: false };
+      render();
+    }
     if (action === "export") exportCSV(button.dataset.kind);
     if (action === "export-backup") {
       const url = URL.createObjectURL(new Blob([JSON.stringify(state, null, 2)], { type: "application/json" }));
@@ -1574,10 +1655,11 @@
     }
     if (action === "reset-demo") {
       if (window.confirm("Isso substituirá os dados atuais por exemplos demonstrativos. Continuar?")) {
-        state = makeSeed();
+        state = makeEmptyState(state.settings?.companyName || "", state.settings?.ownerName || "");
+        state.settings = { ...state.settings, setupComplete: Boolean(state.settings.companyName) };
         save();
         render();
-        showToast("Dados de exemplo restaurados.");
+        showToast("Espaço limpo. Agora você pode cadastrar sua operação.");
       }
     }
     if (action === "import") {
@@ -1639,6 +1721,18 @@
     return data;
   }
   app.addEventListener("submit", (event) => {
+    if (event.target.id === "setup-form") {
+      event.preventDefault();
+      const data = Object.fromEntries(new FormData(event.target).entries());
+      const companyName = String(data.companyName || "").trim();
+      if (!companyName) { showToast("Informe o nome da empresa."); return; }
+      if (localStorage.getItem(companyKey(companyName))) { showToast("Essa empresa já existe neste computador. Use a área de entrada."); return; }
+      state = makeEmptyState(companyName, String(data.ownerName || "").trim() || "gestor");
+      save();
+      render();
+      showToast(`Espaço de ${companyName} criado.`);
+      return;
+    }
     if (event.target.id === "settings-form") {
       event.preventDefault();
       const data = Object.fromEntries(new FormData(event.target).entries());
@@ -1656,6 +1750,7 @@
         primaryColor: safeColor(data.primaryColor),
         accentColor: safeColor(data.accentColor),
         surfaceColor: safeColor(data.surfaceColor),
+        setupComplete: true,
       };
       save();
       render();

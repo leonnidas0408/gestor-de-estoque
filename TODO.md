@@ -17,6 +17,9 @@
 - [x] Permitir configurar nome da empresa, responsável, frase do painel e moeda.
 - [x] Permitir personalizar cores principais, destaque e fundo com presets de tema.
 - [x] Permitir exportar um backup JSON completo dos dados e restaurar os dados demonstrativos.
+- [x] Exibir onboarding como primeira tela, sem dados de exemplo, com criação de empresa vazia.
+- [x] Salvar a empresa ativa em cookie e separar os dados locais por empresa neste navegador.
+- [x] Permitir entrar por nome em empresas já salvas e trocar de empresa pelas configurações.
 
 ## Verificação antes da publicação
 - [x] Os fluxos críticos devem ter testes automatizados e verificação funcional concluída antes da publicação.

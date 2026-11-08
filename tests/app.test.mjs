@@ -29,7 +29,13 @@ function makeState(products = []) {
     ],
     sales: [],
     movements: [],
-    settings: { currency: "BRL" },
+    settings: {
+      companyName: "Empresa de teste",
+      ownerName: "Teste",
+      tagline: "Operação sob controle.",
+      currency: "BRL",
+      setupComplete: true,
+    },
   };
 }
 
@@ -88,7 +94,7 @@ function savedState(dom) {
 }
 
 test("painel e navegação principal carregam as telas", () => {
-  const dom = createApp();
+  const dom = createApp(makeState());
   const { document } = dom.window;
   assert.match(document.querySelector("h1").textContent, /Bom dia/);
   for (const [view, heading] of [

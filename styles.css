@@ -1215,3 +1215,24 @@ body { background: var(--surface); }
 .theme-preset i { width: 12px; height: 12px; border-radius: 50%; }
 .settings-actions { display: flex; flex-wrap: wrap; gap: 10px; }
 @media (max-width: 430px) { .theme-swatches { grid-template-columns: 1fr; } .brand { max-width: 190px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; } }
+
+
+/* Primeiro acesso e empresas locais */
+.onboarding-shell { min-height: 100vh; padding: 28px 18px; display: grid; place-items: center; background: radial-gradient(circle at 10% 0%, #e8f4e8, transparent 42%), var(--surface); }
+.onboarding-card { width: min(100%, 760px); padding: clamp(22px, 5vw, 48px); background: #fff; border: 1px solid #e7eee7; border-radius: 28px; box-shadow: 0 22px 70px rgba(26,65,42,.1); }
+.onboarding-brand { display: flex; align-items: center; gap: 10px; color: var(--green-dark); font: 800 20px Manrope, sans-serif; margin-bottom: 44px; }
+.onboarding-card h1 { margin: 7px 0 10px; color: #153a28; font: 800 clamp(28px, 5vw, 42px)/1.1 Manrope, sans-serif; letter-spacing: -1.4px; }
+.onboarding-lead { max-width: 590px; color: var(--muted); font-size: 15px; line-height: 1.55; margin: 0; }
+.onboarding-sections { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 28px; }
+.setup-panel { padding: 18px; border: 1px solid #e8eee8; border-radius: 18px; background: #fbfdfb; display: grid; gap: 14px; align-content: start; }
+.setup-panel-heading { display: flex; gap: 11px; align-items: center; }
+.setup-panel-heading h2 { margin: 0 0 3px; font: 700 16px Manrope, sans-serif; color: #173d2c; }
+.setup-panel-heading p { margin: 0; color: var(--muted); font-size: 12px; line-height: 1.4; }
+.setup-field { display: grid; gap: 7px; color: #526158; font-size: 12px; font-weight: 700; }
+.setup-field input { width: 100%; min-height: 44px; border: 1px solid #dfe9df; border-radius: 11px; padding: 0 12px; background: #fff; color: var(--ink); }
+.known-companies { display: grid; gap: 6px; padding-top: 2px; }
+.known-companies > span { color: var(--muted); font-size: 11px; font-weight: 700; }
+.known-company { display: flex; justify-content: space-between; align-items: center; border: 0; border-radius: 9px; padding: 8px 10px; background: #f0f6ef; color: var(--green-dark); text-align: left; font-size: 12px; font-weight: 700; }
+.setup-empty, .onboarding-footnote { color: var(--muted); font-size: 12px; line-height: 1.5; }
+.onboarding-footnote { margin: 22px 0 0; text-align: center; }
+@media (max-width: 680px) { .onboarding-sections { grid-template-columns: 1fr; } .onboarding-brand { margin-bottom: 30px; } }
