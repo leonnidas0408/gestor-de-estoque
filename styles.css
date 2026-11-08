@@ -1236,3 +1236,9 @@ body { background: var(--surface); }
 .setup-empty, .onboarding-footnote { color: var(--muted); font-size: 12px; line-height: 1.5; }
 .onboarding-footnote { margin: 22px 0 0; text-align: center; }
 @media (max-width: 680px) { .onboarding-sections { grid-template-columns: 1fr; } .onboarding-brand { margin-bottom: 30px; } }
+
+.danger-zone { display: grid; gap: 6px; margin-top: 18px; padding: 14px; border: 1px solid #f3d8d5; border-radius: 14px; background: #fff8f7; }
+.danger-zone strong { color: #9f3933; font: 700 13px Manrope, sans-serif; }
+.danger-zone span { color: #8b625e; font-size: 12px; line-height: 1.45; }
+.button-danger { background: #fff; border: 1px solid #e7aaa5; color: #a23c35; justify-self: start; }
+.button-danger:hover { background: #fff0ee; }
